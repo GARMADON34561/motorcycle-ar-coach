@@ -4,11 +4,17 @@ FastAPI server for Motorcycle AR Coach environment
 
 import sys
 import os
+import traceback
 from pathlib import Path
 
-# Add the server directory to Python path
-server_dir = Path(__file__).parent
-sys.path.insert(0, str(server_dir))
+# Add current directory to path
+sys.path.insert(0, os.path.dirname(__file__))
+sys.path.insert(0, os.getcwd())
+
+print("=== Starting Motorcycle AR Coach Server ===")
+print(f"Current directory: {os.getcwd()}")
+print(f"Files in current directory: {os.listdir('.')}")
+print(f"Files in server directory: {os.listdir('server') if os.path.exists('server') else 'server folder not found'}")
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -16,9 +22,24 @@ from pydantic import BaseModel
 from typing import Dict, Any
 import uuid
 
-# Now import from the same directory
-from motorcycle_env import MotorcycleEnvironment
-from models import MotorcycleAction, MotorcycleObservation
+# Try to import
+try:
+    print("Attempting to import from motorcycle_env...")
+    from server.motorcycle_env import MotorcycleEnvironment
+    print("✓ Import successful")
+except Exception as e:
+    print(f"✗ Import failed: {e}")
+    traceback.print_exc()
+    raise
+
+try:
+    print("Attempting to import models...")
+    from server.models import MotorcycleAction, MotorcycleObservation
+    print("✓ Models imported")
+except Exception as e:
+    print(f"✗ Models import failed: {e}")
+    traceback.print_exc()
+    raise
 
 app = FastAPI(title="Motorcycle AR Coach Environment")
 
@@ -37,6 +58,10 @@ class ResetResponse(BaseModel):
     session_id: str
     observation: MotorcycleObservation
 
+class StepRequest(BaseModel):
+    session_id: str
+    action: MotorcycleAction
+
 class StepResponse(BaseModel):
     observation: MotorcycleObservation
     reward: float
@@ -51,29 +76,40 @@ async def root():
 async def health():
     return {"status": "healthy"}
 
-@app.post("/reset", response_model=ResetResponse)
+@app.post("/reset")
 async def reset_environment(task: str = "cornering"):
     """Reset the environment with a specific task"""
-    session_id = str(uuid.uuid4())
-    env = MotorcycleEnvironment(task=task)
-    sessions[session_id] = env
-    obs = env.reset()
-    return ResetResponse(session_id=session_id, observation=obs)
+    try:
+        print(f"Reset called with task: {task}")
+        session_id = str(uuid.uuid4())
+        env = MotorcycleEnvironment(task=task)
+        sessions[session_id] = env
+        obs = env.reset()
+        print(f"Reset successful, session: {session_id[:8]}")
+        return {"session_id": session_id, "observation": obs.dict()}
+    except Exception as e:
+        print(f"Reset error: {e}")
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
 
-@app.post("/step", response_model=StepResponse)
-async def step_environment(session_id: str, action: MotorcycleAction):
+@app.post("/step")
+async def step_environment(request: StepRequest):
     """Take a step in the environment"""
-    if session_id not in sessions:
+    if request.session_id not in sessions:
         raise HTTPException(status_code=404, detail="Session not found")
     
-    env = sessions[session_id]
-    obs, reward, done, info = env.step(action)
+    env = sessions[request.session_id]
+    obs, reward, done, info = env.step(request.action)
     
     if done:
-        # Clean up session
-        del sessions[session_id]
+        del sessions[request.session_id]
     
-    return StepResponse(observation=obs, reward=reward, done=done, info=info)
+    return {
+        "observation": obs.dict(),
+        "reward": reward,
+        "done": done,
+        "info": info
+    }
 
 @app.get("/task_score/{session_id}/{task_name}")
 async def get_task_score(session_id: str, task_name: str):
