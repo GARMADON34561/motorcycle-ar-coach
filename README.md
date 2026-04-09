@@ -1,3 +1,12 @@
+---
+title: Motorcycle AR Coach
+emoji: 🏍️
+colorFrom: gray
+colorTo: pink
+sdk: docker
+pinned: false
+---
+
 # Motorcycle AR Coach Environment
 
 An OpenEnv RL environment for training AI agents to ride motorcycles safely and efficiently, designed for AR glasses integration.
