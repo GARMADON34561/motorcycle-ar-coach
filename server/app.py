@@ -80,17 +80,33 @@ async def health():
 async def reset_environment(task: str = "cornering"):
     """Reset the environment with a specific task"""
     try:
-        print(f"Reset called with task: {task}")
-        session_id = str(uuid.uuid4())
+        print(f"=== RESET CALLED ===")
+        print(f"Task: {task}")
+        
+        # Test 1: Create environment
+        print("Creating MotorcycleEnvironment...")
         env = MotorcycleEnvironment(task=task)
-        sessions[session_id] = env
+        print("✓ Environment created")
+        
+        # Test 2: Reset
+        print("Calling reset()...")
         obs = env.reset()
-        print(f"Reset successful, session: {session_id[:8]}")
-        return {"session_id": session_id, "observation": obs.dict()}
+        print(f"✓ Reset successful, speed: {obs.speed}")
+        
+        # Test 3: Create session
+        session_id = str(uuid.uuid4())
+        sessions[session_id] = env
+        print(f"✓ Session created: {session_id[:8]}")
+        
+        # Test 4: Return response
+        response = {"session_id": session_id, "observation": obs.dict()}
+        print("Returning response")
+        return response
+        
     except Exception as e:
-        print(f"Reset error: {e}")
+        print(f"✗ RESET ERROR: {e}")
         traceback.print_exc()
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
 
 @app.post("/step")
 async def step_environment(request: StepRequest):
