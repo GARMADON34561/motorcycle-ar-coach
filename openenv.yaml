@@ -1,0 +1,28 @@
+openenv_version: 1
+name: motorcycle-ar-coach
+version: 1.0.0
+description: "AR Motorcycle Coach - RL environment for training AI to ride safely and efficiently"
+
+tasks:
+  - name: cornering
+    description: "Navigate a 90-degree turn at 40 km/h while maintaining smooth lean angle"
+    grader: "server.motorcycle_env.MotorcycleEnvironment.get_task_score"
+    
+  - name: emergency
+    description: "Avoid a sudden obstacle using emergency braking and swerving"
+    grader: "server.motorcycle_env.MotorcycleEnvironment.get_task_score"
+    
+  - name: efficiency
+    description: "Complete 5 km course minimizing fuel consumption while maintaining safe speed"
+    grader: "server.motorcycle_env.MotorcycleEnvironment.get_task_score"
+
+tags:
+  - motorcycle
+  - ar
+  - safety
+  - real-world
+  - control
+
+authors:
+  - name: "Kanishak Patyal"
+    email: "kanishakpatyal@gmail.com"
